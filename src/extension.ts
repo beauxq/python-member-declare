@@ -54,18 +54,20 @@ class PythonClass {
 	}
 }
 
+const nameChars: ReadonlySet<number> = new Set([
+	48, 49, 50, 51, 52, 53, 54, 55, 56, 57,  // 0-9
+	65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90,  // A-Z
+	97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,  // a-z
+	95  // "_"
+]);
+
 /**
  * valid character for a name in python
  */
 function isValidNameChar(char: string, index: number = 0): boolean {
 	const code = char.charCodeAt(index);
 
-	return (
-		(code > 47 && code < 58) ||  // numeric (0-9)
-		(code > 64 && code < 91) ||  // upper alpha (A-Z)
-		(code > 96 && code < 123) ||  // lower alpha (a-z)
-		char === "_"
-	);
+	return nameChars.has(code);
 }
 
 /**
@@ -95,7 +97,7 @@ function updateDiagnostics(document: vscode.TextDocument, collection: vscode.Dia
 	}
 }
 
-function getDiagnostics(document: vscode.TextDocument) {
+function getDiagnostics(document: vscode.TextDocument): vscode.Diagnostic[] {
 	const classStack: PythonClass[] = [];
 
 	const diags: vscode.Diagnostic[] = [];
@@ -111,7 +113,7 @@ function getDiagnostics(document: vscode.TextDocument) {
 		// TODO: handle everywhere that I'm in a string: `a = "self.c = 4"`
 
 		while (classStack.length && indent <= classStack[classStack.length - 1].indent) {
-			console.log(`finished class definition: ${classStack[classStack.length - 1].name}`);
+			console.log(`finished class definition: ${classStack[classStack.length - 1].name} at line ${line.lineNumber}`);
 			classStack.pop();
 		}
 
@@ -130,6 +132,7 @@ function getDiagnostics(document: vscode.TextDocument) {
 
 			if (currentClass.impIndent === 0) {
 				// first line of class implementation
+				console.log(`class ${currentClass.name} indentation found at ${indent} on line ${lineNo}`);
 				currentClass.impIndent = indent;
 			}
 
