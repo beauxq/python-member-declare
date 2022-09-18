@@ -44,6 +44,7 @@ class PythonClass {
 	indent: number;
 	/** indentation of implementation (> indent, 0 means not set) */
 	impIndent: number = 0;
+	isSubclass: boolean = false;
 
 	declared: Set<string> = new Set();
 
@@ -121,6 +122,12 @@ function getDiagnostics(document: vscode.TextDocument): vscode.Diagnostic[] {
 		if (trimmed.startsWith("class ")) {
 			const name = getName(trimmed, 6);
 			classStack.push(new PythonClass(name, line.lineNumber, indent));
+			if ((trimmed.length > 6 + name.length + 1) &&
+				(trimmed[6 + name.length] === '(') &&
+				(trimmed[6 + name.length + 1] !== ')'))
+			{
+				classStack[classStack.length - 1].isSubclass = true;
+			}
 			console.log(`entering new class: ${name}`);
 		}
 		else { // not new class
@@ -136,6 +143,11 @@ function getDiagnostics(document: vscode.TextDocument): vscode.Diagnostic[] {
 				currentClass.impIndent = indent;
 			}
 
+			if (currentClass.isSubclass) {
+				// then we don't know what members are declared
+				continue;
+			}
+
 			if (indent === currentClass.impIndent) {
 				// This is a place where class members could be declared
 				const maybeMemberName = getName(trimmed, 0);
@@ -146,7 +158,7 @@ function getDiagnostics(document: vscode.TextDocument): vscode.Diagnostic[] {
 					currentClass.declared.add(maybeMemberName);
 				}
 			}
-			else { // not the base class implementation indentation (>)
+			else {  // not the base class implementation indentation (>)
 				// look for assignment to class member
 				let cursor = line.text.indexOf("self.");
 				while (cursor < line.text.length && cursor !== -1) {

@@ -35,3 +35,14 @@ class C:
     def __init__(self) -> None:
         self.b = 3
 ```
+
+```python
+class B:
+    b: int
+
+class C(B):
+    def __init__(self) -> None:
+        # not reported because we don't look at what members are inherited
+        self.b = 3
+        self.a = 3
+```
